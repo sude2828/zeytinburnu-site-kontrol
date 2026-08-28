@@ -1,106 +1,43 @@
-const Database = require("better-sqlite3");
 const express = require("express");
-const https = require("https");
+const Database = require("better-sqlite3");
 const http = require("http");
+const https = require("https");
+const dns = require("dns");
+
+dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
-
 const PORT = process.env.PORT || 3001;
 
 const db = new Database("site-kontrol.db");
 
-
-// ==================================================
-// SİTELER
-// ==================================================
-
 const siteler = [
-    {
-        ad: "Zeytinburnu Belediyesi",
-        url: "https://zeytinburnu.istanbul/"
-    },
-    {
-        ad: "Ömer Arsoy",
-        url: "https://omerarisoy.com.tr/"
-    },
-    {
-        ad: "Kariyer Merkezi",
-        url: "https://zeytinburnukariyermerkezi.com/"
-    },
-    {
-        ad: "Gençlik Merkezi",
-        url: "https://zeygem.org.tr/"
-    },
-    {
-        ad: "Bilgi Evi",
-        url: "https://bilgievi.org.tr/"
-    },
-    {
-        ad: "Zeytinburnu Kültür Sanat",
-        url: "https://zeytinburnukultursanat.com/"
-    },
-    {
-        ad: "Akdem",
-        url: "https://akdem.org.tr/"
-    },
-    {
-        ad: "Kültür Vadisi",
-        url: "https://kulturvadisi.com/"
-    },
-    {
-        ad: "Beyond The Wall",
-        url: "https://beyondthewalls.ist/"
-    },
-    {
-        ad: "Millet Kıraathaneleri",
-        url: "https://milletkiraathanesi.org.tr/"
-    },
-    {
-        ad: "Kazlıçeşme Sanat",
-        url: "https://kazlicesmesanat.com/"
-    },
-    {
-        ad: "Bilim Zeytinburnu",
-        url: "https://bilimzeytinburnu.org/"
-    },
-    {
-        ad: "Zeytinburnu Kitapçısı",
-        url: "https://zeytinburnukitapcisi.com/"
-    },
-    {
-        ad: "Vatandaş Zeybim",
-        url: "https://vatandas.zeybim.com/"
-    },
-    {
-        ad: "Z Dergisi",
-        url: "https://zdergisi.com/"
-    },
-    {
-        ad: "Sayısal Online İşlemler",
-        url: "https://webportal.zeytinburnu.bel.tr/"
-    },
-    {
-        ad: "Platform Zeytinburnu",
-        url: "https://platformzeytinburnu.com/"
-    },
-    {
-        ad: "Geleceğin Ustaları",
-        url: "https://geleceginustalari.ist/"
-    },
-    {
-        ad: "Doğru İşlerin Belediyesi",
-        url: "https://dogruislerinbelediyesi.com/"
-    },
-    {
-        ad: "Afet Zeytinburnu",
-        url: "https://afet.zeytinburnu.istanbul/"
-    }
+    { ad: "Zeytinburnu Belediyesi", url: "https://zeytinburnu.istanbul/" },
+    { ad: "Ömer Arsoy", url: "https://omerarisoy.com.tr/" },
+    { ad: "Kariyer Merkezi", url: "https://zeytinburnukariyermerkezi.com/" },
+    { ad: "Gençlik Merkezi", url: "https://zeygem.org.tr/" },
+    { ad: "Bilgi Evi", url: "https://bilgievi.org.tr/" },
+    { ad: "Zeytinburnu Kültür Sanat", url: "https://zeytinburnukultursanat.com/" },
+    { ad: "Akdem", url: "https://akdem.org.tr/" },
+    { ad: "Kültür Vadisi", url: "https://kulturvadisi.com/" },
+    { ad: "Beyond The Wall", url: "https://beyondthewalls.ist/" },
+    { ad: "Millet Kıraathaneleri", url: "https://milletkiraathanesi.org.tr/" },
+    { ad: "Kazlıçeşme Sanat", url: "https://kazlicesmesanat.com/" },
+    { ad: "Bilim Zeytinburnu", url: "https://bilimzeytinburnu.org/" },
+    { ad: "Zeytinburnu Kitapçısı", url: "https://zeytinburnukitapcisi.com/" },
+    { ad: "Vatandaş Zeybim", url: "https://vatandas.zeybim.com/" },
+    { ad: "Z Dergisi", url: "https://zdergisi.com/" },
+    { ad: "Sayısal Online İşlemler", url: "https://webportal.zeytinburnu.bel.tr/" },
+    { ad: "Platform Zeytinburnu", url: "https://platformzeytinburnu.com/" },
+    { ad: "Geleceğin Ustaları", url: "https://geleceginustalari.ist/" },
+    { ad: "Doğru İşlerin Belediyesi", url: "https://dogruislerinbelediyesi.com/" },
+    { ad: "Afet Zeytinburnu", url: "https://afet.zeytinburnu.istanbul/" }
 ];
 
 
-// ==================================================
+// --------------------------------------------------
 // VERİTABANI
-// ==================================================
+// --------------------------------------------------
 
 db.prepare(`
     CREATE TABLE IF NOT EXISTS olcumler (
@@ -113,25 +50,25 @@ db.prepare(`
 `).run();
 
 
-// ==================================================
+// --------------------------------------------------
 // STATİK DOSYALAR
-// ==================================================
+// --------------------------------------------------
 
 app.use(express.static(__dirname));
 
 
-// ==================================================
+// --------------------------------------------------
 // SİTELER
-// ==================================================
+// --------------------------------------------------
 
 app.get("/siteler", (req, res) => {
     res.json(siteler);
 });
 
 
-// ==================================================
-// GEÇMİŞ ÖLÇÜMLER
-// ==================================================
+// --------------------------------------------------
+// GEÇMİŞ
+// --------------------------------------------------
 
 app.get("/gecmis", (req, res) => {
 
@@ -150,7 +87,7 @@ app.get("/gecmis", (req, res) => {
         sonuclar.push({
             ad: site.ad,
             url: site.url,
-            olcumler: olcumler
+            olcumler
         });
     }
 
@@ -158,41 +95,42 @@ app.get("/gecmis", (req, res) => {
 });
 
 
-// ==================================================
-// HTTPS / HTTP KONTROLÜ
-// ==================================================
+// --------------------------------------------------
+// SİTE KONTROL
+// --------------------------------------------------
 
-function siteIste(siteUrl, redirectSayisi = 0) {
+function siteKontrolEt(site, yonlendirmeSayisi = 0) {
 
-    return new Promise((resolve, reject) => {
-
-        if (redirectSayisi > 5) {
-            reject(new Error("Çok fazla yönlendirme"));
-            return;
-        }
-
-        let url;
-
-        try {
-            url = new URL(siteUrl);
-        } catch (hata) {
-            reject(new Error("Geçersiz site adresi"));
-            return;
-        }
-
-        const protokol =
-            url.protocol === "https:"
-                ? https
-                : http;
+    return new Promise((resolve) => {
 
         const baslangic = Date.now();
 
-        const istek = protokol.request(
-            url,
-            {
-                method: "GET",
+        let adres;
 
-                timeout: 20000,
+        try {
+            adres = new URL(site.url);
+        } catch (hata) {
+
+            resolve({
+                ad: site.ad,
+                url: site.url,
+                durum: "Ulaşılamadı",
+                sure: null,
+                hata: "Geçersiz URL"
+            });
+
+            return;
+        }
+
+        const istemci = adres.protocol === "https:"
+            ? https
+            : http;
+
+        const istek = istemci.get(
+            adres,
+            {
+                timeout: 15000,
+                family: 4,
 
                 headers: {
                     "User-Agent":
@@ -201,346 +139,281 @@ function siteIste(siteUrl, redirectSayisi = 0) {
                     "Accept":
                         "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 
-                    "Connection":
-                        "close"
+                    "Connection": "close"
                 }
             },
 
-            cevap => {
+            (cevap) => {
 
-                const sure =
-                    Date.now() - baslangic;
+                const sure = Date.now() - baslangic;
 
                 // Yönlendirme varsa takip et
                 if (
-                    cevap.statusCode >= 300 &&
-                    cevap.statusCode < 400 &&
+                    [301, 302, 303, 307, 308].includes(cevap.statusCode) &&
                     cevap.headers.location
                 ) {
 
-                    const yeniAdres =
-                        new URL(
-                            cevap.headers.location,
-                            url
-                        ).toString();
+                    if (yonlendirmeSayisi >= 5) {
+
+                        db.prepare(`
+                            INSERT INTO olcumler
+                            (site, sure, durum)
+                            VALUES (?, ?, ?)
+                        `).run(
+                            site.url,
+                            sure,
+                            cevap.statusCode
+                        );
+
+                        resolve({
+                            ad: site.ad,
+                            url: site.url,
+                            durum: cevap.statusCode,
+                            sure,
+                            hata: "Çok fazla yönlendirme"
+                        });
+
+                        return;
+                    }
+
+                    const yeniUrl = new URL(
+                        cevap.headers.location,
+                        adres
+                    ).toString();
 
                     cevap.resume();
 
-                    siteIste(
-                        yeniAdres,
-                        redirectSayisi + 1
-                    )
-                    .then(resolve)
-                    .catch(reject);
+                    siteKontrolEt(
+                        {
+                            ad: site.ad,
+                            url: yeniUrl
+                        },
+                        yonlendirmeSayisi + 1
+                    ).then(resolve);
 
                     return;
                 }
 
-                // Cevabın tamamını tüket
                 cevap.resume();
 
+                db.prepare(`
+                    INSERT INTO olcumler
+                    (site, sure, durum)
+                    VALUES (?, ?, ?)
+                `).run(
+                    site.url,
+                    sure,
+                    cevap.statusCode || 0
+                );
+
                 resolve({
-                    durum: cevap.statusCode,
-                    sure: sure
+                    ad: site.ad,
+                    url: site.url,
+                    durum: cevap.statusCode || 0,
+                    sure,
+                    hata: null
                 });
             }
         );
 
-        istek.on("timeout", () => {
+
+        // --------------------------------------------------
+        // HATA
+        // --------------------------------------------------
+
+        istek.on("error", (hata) => {
+
+            const sure = Date.now() - baslangic;
+
+            let hataMesaji = "Bilinmeyen bağlantı hatası";
+
+            if (hata.code === "ENOTFOUND") {
+                hataMesaji = "DNS: Site adresi bulunamadı";
+            }
+            else if (hata.code === "ECONNREFUSED") {
+                hataMesaji = "Bağlantı reddedildi";
+            }
+            else if (hata.code === "ECONNRESET") {
+                hataMesaji = "Bağlantı karşı tarafça kapatıldı";
+            }
+            else if (hata.code === "ETIMEDOUT") {
+                hataMesaji = "Bağlantı zaman aşımına uğradı";
+            }
+            else if (hata.code === "CERT_HAS_EXPIRED") {
+                hataMesaji = "SSL sertifikasının süresi dolmuş";
+            }
+            else if (hata.code === "UNABLE_TO_VERIFY_LEAF_SIGNATURE") {
+                hataMesaji = "SSL sertifikası doğrulanamadı";
+            }
+            else if (hata.code === "EPROTO") {
+                hataMesaji = "SSL/TLS bağlantı hatası";
+            }
+            else if (hata.message) {
+                hataMesaji = hata.message;
+            }
+
+            console.log(
+                `❌ ${site.ad} → ${hataMesaji}`
+            );
+
+            db.prepare(`
+                INSERT INTO olcumler
+                (site, sure, durum)
+                VALUES (?, ?, ?)
+            `).run(
+                site.url,
+                sure,
+                0
+            );
+
+            resolve({
+                ad: site.ad,
+                url: site.url,
+                durum: "Ulaşılamadı",
+                sure,
+                hata: hataMesaji
+            });
+        });
+
+
+        // Timeout
+        istek.setTimeout(15000, () => {
 
             istek.destroy(
-                new Error(
-                    "20 saniye içinde cevap alınamadı"
-                )
+                new Error("ETIMEDOUT")
             );
+
         });
 
-        istek.on("error", hata => {
-
-            reject(hata);
-        });
-
-        istek.end();
     });
 }
 
 
-// ==================================================
-// TEK SİTE KONTROLÜ
-// ==================================================
-
-async function siteKontrolEt(site) {
-
-    try {
-
-        const sonuc =
-            await siteIste(site.url);
-
-        db.prepare(`
-            INSERT INTO olcumler
-            (site, sure, durum)
-            VALUES (?, ?, ?)
-        `).run(
-            site.url,
-            sonuc.sure,
-            sonuc.durum
-        );
-
-        console.log(
-            "✅ " +
-            site.ad +
-            " → HTTP " +
-            sonuc.durum +
-            " → " +
-            sonuc.sure +
-            " ms"
-        );
-
-        return {
-
-            ad: site.ad,
-
-            url: site.url,
-
-            durum: sonuc.durum,
-
-            sure: sonuc.sure,
-
-            hata: null
-        };
-
-    } catch (hata) {
-
-        let hataMesaji =
-            "Siteye ulaşılamadı";
-
-        if (hata.code === "ENOTFOUND") {
-
-            hataMesaji =
-                "Site adresi bulunamadı";
-
-        } else if (hata.code === "ECONNREFUSED") {
-
-            hataMesaji =
-                "Bağlantı reddedildi";
-
-        } else if (hata.code === "ECONNRESET") {
-
-            hataMesaji =
-                "Bağlantı karşı taraf tarafından kapatıldı";
-
-        } else if (hata.code === "ETIMEDOUT") {
-
-            hataMesaji =
-                "Bağlantı zaman aşımına uğradı";
-
-        } else if (
-            hata.message &&
-            hata.message.includes("20 saniye")
-        ) {
-
-            hataMesaji =
-                "20 saniye içinde cevap vermedi";
-
-        } else if (hata.message) {
-
-            hataMesaji =
-                hata.message;
-        }
-
-        console.log(
-            "❌ " +
-            site.ad +
-            " → " +
-            hataMesaji
-        );
-
-        db.prepare(`
-            INSERT INTO olcumler
-            (site, sure, durum)
-            VALUES (?, ?, ?)
-        `).run(
-            site.url,
-            null,
-            0
-        );
-
-        return {
-
-            ad: site.ad,
-
-            url: site.url,
-
-            durum: "Ulaşılamadı",
-
-            sure: null,
-
-            hata: hataMesaji
-        };
-    }
-}
-
-
-// ==================================================
+// --------------------------------------------------
 // TÜM SİTELER
-// ==================================================
+// --------------------------------------------------
 
 app.get("/tum-siteler", async (req, res) => {
 
     try {
 
-        const sonuclar =
-            await Promise.all(
-                siteler.map(site =>
-                    siteKontrolEt(site)
-                )
-            );
+        const sonuclar = await Promise.all(
+            siteler.map(site => siteKontrolEt(site))
+        );
 
         res.json(sonuclar);
 
     } catch (hata) {
 
-        console.log(
+        console.error(
             "Genel kontrol hatası:",
             hata
         );
 
         res.status(500).json({
-            hata:
-                "Siteler kontrol edilirken hata oluştu."
+            hata: "Siteler kontrol edilirken hata oluştu."
         });
     }
 });
 
 
-// ==================================================
+// --------------------------------------------------
 // CANLI KONTROL
-// ==================================================
+// --------------------------------------------------
 
-app.get(
-    "/tum-siteler-canli",
-    async (req, res) => {
+app.get("/tum-siteler-canli", async (req, res) => {
 
-        res.setHeader(
-            "Content-Type",
-            "text/event-stream"
-        );
+    res.setHeader(
+        "Content-Type",
+        "text/event-stream"
+    );
 
-        res.setHeader(
-            "Cache-Control",
-            "no-cache"
-        );
+    res.setHeader(
+        "Cache-Control",
+        "no-cache"
+    );
 
-        res.setHeader(
-            "Connection",
-            "keep-alive"
-        );
+    res.setHeader(
+        "Connection",
+        "keep-alive"
+    );
 
-        if (res.flushHeaders) {
-            res.flushHeaders();
-        }
+    if (res.flushHeaders) {
+        res.flushHeaders();
+    }
 
-        const toplam =
-            siteler.length;
+    const toplam = siteler.length;
 
-        let tamamlanan = 0;
+    let tamamlanan = 0;
 
-        const kontroller =
-            siteler.map(async site => {
+    const kontroller = siteler.map(async (site) => {
 
-                const sonuc =
-                    await siteKontrolEt(site);
+        const sonuc = await siteKontrolEt(site);
 
-                tamamlanan++;
-
-                res.write(
-                    `data: ${JSON.stringify({
-
-                        ad: sonuc.ad,
-
-                        url: sonuc.url,
-
-                        durum: sonuc.durum,
-
-                        sure: sonuc.sure,
-
-                        hata: sonuc.hata,
-
-                        tamamlanan:
-                            tamamlanan,
-
-                        toplam:
-                            toplam
-
-                    })}\n\n`
-                );
-            });
-
-        await Promise.all(kontroller);
+        tamamlanan++;
 
         res.write(
             `data: ${JSON.stringify({
-
-                tamamlandi: true,
-
-                toplam: toplam
-
+                ad: sonuc.ad,
+                url: sonuc.url,
+                durum: sonuc.durum,
+                sure: sonuc.sure,
+                hata: sonuc.hata,
+                tamamlanan,
+                toplam
             })}\n\n`
         );
+    });
 
-        res.end();
-    }
-);
+    await Promise.all(kontroller);
+
+    res.write(
+        `data: ${JSON.stringify({
+            tamamlandi: true,
+            toplam
+        })}\n\n`
+    );
+
+    res.end();
+});
 
 
-// ==================================================
-// TEK KONTROL
-// ==================================================
+// --------------------------------------------------
+// TEK SİTE KONTROLÜ
+// --------------------------------------------------
 
 app.get("/kontrol", async (req, res) => {
 
     try {
 
-        const site =
-            siteler[0];
-
-        const sonuc =
-            await siteKontrolEt(site);
+        const sonuc = await siteKontrolEt(
+            siteler[0]
+        );
 
         res.json({
-
-            site:
-                sonuc.url,
-
-            durum:
-                sonuc.durum,
-
-            sure:
-                sonuc.sure,
-
-            hata:
-                sonuc.hata
+            site: sonuc.url,
+            durum: sonuc.durum,
+            sure: sonuc.sure,
+            hata: sonuc.hata
         });
 
     } catch (hata) {
 
-        console.log(
+        console.error(
             "Kontrol hatası:",
             hata
         );
 
         res.status(500).json({
-
-            hata:
-                "Kontrol sırasında hata oluştu."
+            hata: "Kontrol sırasında hata oluştu."
         });
     }
 });
 
 
-// ==================================================
+// --------------------------------------------------
 // ANA SAYFA
-// ==================================================
+// --------------------------------------------------
 
 app.get("/", (req, res) => {
 
@@ -550,9 +423,9 @@ app.get("/", (req, res) => {
 });
 
 
-// ==================================================
+// --------------------------------------------------
 // SUNUCU
-// ==================================================
+// --------------------------------------------------
 
 app.listen(
     PORT,
@@ -563,8 +436,5 @@ app.listen(
             `SUNUCU ${PORT} AÇIK`
         );
 
-        console.log(
-            `Web sitesi hazır`
-        );
     }
 );
