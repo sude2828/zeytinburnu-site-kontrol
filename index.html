@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Zeytinburnu Belediyesi Web Site Kontrol</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f4f7fb;
+            color: #222;
+        }
+
+
+        /* ÜST ALAN */
+
+        .ust-alan {
+            background: linear-gradient(135deg, #12355b, #1f5f8b);
+            color: white;
+            padding: 25px 40px;
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .ust-alan img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            background: white;
+            border-radius: 15px;
+            padding: 5px;
+        }
+
+        .ust-alan h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+
+        /* İÇERİK */
+
+        .icerik {
+            max-width: 1200px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+
+        /* BUTON */
+
+        button {
+            background: #12355b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 13px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #0b2742;
+            transform: translateY(-1px);
+        }
+
+
+        /* İLERLEME */
+
+        .ilerleme {
+            margin-top: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+        }
+
+        .ilerleme-yazi {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            color: #12355b;
+        }
+
+        .ilerleme-cubuk {
+            width: 100%;
+            height: 12px;
+            background: #e1e7ed;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #ilerleme-doluluk {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #12355b, #1f5f8b);
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        #ilerleme-site {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+
+        /* SONUÇ */
+
+        #sonuc {
+            margin-top: 25px;
+        }
+
+        h2 {
+            margin-top: 35px;
+            color: #12355b;
+        }
+
+
+        /* KARTLAR */
+
+        .site-kartlari {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .site-karti {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.10);
+            border: 1px solid #e1e7ed;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .site-karti:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+        }
+
+
+        /* KART BAŞLIĞI */
+
+        .site-karti h3 {
+            margin: 0;
+            padding: 14px 18px;
+            color: white;
+            background: linear-gradient(135deg, #12355b, #1f5f8b);
+            font-size: 18px;
+            letter-spacing: 0.5px;
+        }
+
+        .kart-icerik {
+            padding: 20px;
+        }
+
+
+        /* DURUMLAR */
+
+        .durum {
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .basarili {
+            color: #16803c;
+        }
+
+        .yavas {
+            color: #d98b00;
+        }
+
+        .zaman-asimi {
+            color: #e67e22;
+        }
+
+        .ulasilamiyor {
+            color: #c62828;
+        }
+
+
+        /* SÜRE */
+
+        .sure {
+            font-size: 26px;
+            font-weight: bold;
+            color: #12355b;
+            margin: 10px 0;
+        }
+
+        .http-durum {
+            color: #666;
+            font-size: 14px;
+        }
+
+
+        /* GEÇMİŞ */
+
+        .gecmis-site {
+            margin-top: 30px;
+        }
+
+        .gecmis-site h3 {
+            color: #12355b;
+            background: #eaf1f7;
+            border-left: 5px solid #1f5f8b;
+            padding: 12px 15px;
+            margin-bottom: 0;
+            border-radius: 8px 8px 0 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        th {
+            background: #12355b;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tr:hover {
+            background: #f0f6fa;
+        }
+
+
+        /* KART İÇİNDE GEÇMİŞ */
+
+        .kart-gecmis {
+            margin-top: 18px;
+            padding-top: 15px;
+            border-top: 1px solid #e1e7ed;
+        }
+
+        .kart-gecmis strong {
+            display: block;
+            color: #12355b;
+            margin-bottom: 10px;
+            font-size: 15px;
+        }
+
+        .gecmis-satir {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+
+        .gecmis-satir span:first-child {
+            font-weight: bold;
+            color: #12355b;
+        }
+
+        .gecmis-satir span:last-child {
+            color: #777;
+            font-size: 12px;
+        }
+
+        .gecmis-yok {
+            color: #888;
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+    <div class="ust-alan">
+
+        <img src="/logo.jpg" alt="Zeytinburnu Belediyesi">
+
+        <h1>
+            Zeytinburnu Belediyesi Web Site Kontrol
+        </h1>
+
+    </div>
+
+
+    <div class="icerik">
+
+        <button id="kontrolButonu" onclick="kontrolEt()">
+            Kontrol Et
+        </button>
+
+        <div id="sonuc"></div>
+
+        <div id="gecmis"></div>
+
+    </div>
+
+
+<script>
+
+
+/* SİTE KONTROLÜ */
+
+function kontrolEt() {
+
+    const sonuc =
+        document.getElementById("sonuc");
+
+    const buton =
+        document.getElementById("kontrolButonu");
+
+
+    buton.disabled = true;
+
+    buton.innerText = "Kontrol Ediliyor...";
+
+
+    sonuc.innerHTML = `
+
+        <div class="ilerleme">
+
+            <div class="ilerleme-yazi">
+
+                <span>
+                    🔄 Siteler kontrol ediliyor...
+                </span>
+
+                <strong id="ilerleme-sayi">
+                    0 / 20
+                </strong>
+
+            </div>
+
+
+            <div class="ilerleme-cubuk">
+
+                <div id="ilerleme-doluluk"></div>
+
+            </div>
+
+
+            <div id="ilerleme-site">
+                Kontrol başlatılıyor...
+            </div>
+
+        </div>
+
+    `;
+
+
+    const veriler = [];
+
+
+    const olay =
+        new EventSource("/tum-siteler-canli");
+
+
+    olay.onmessage = function(event) {
+
+        const veri =
+            JSON.parse(event.data);
+
+
+        /* KONTROL TAMAMLANDI */
+
+        if (veri.tamamlandi) {
+
+            olay.close();
+
+
+            let html =
+                "<h2>Site Kontrol Sonuçları</h2>";
+
+
+            html +=
+                '<div class="site-kartlari">';
+
+
+            veriler.forEach((veri) => {
+
+
+                let durumSinifi = "";
+                let durumMetni = "";
+
+
+                if (veri.durum === "Ulaşılamadı") {
+
+
+                    if (
+                        veri.hata &&
+                        veri.hata.includes("20 saniye")
+                    ) {
+
+                        durumSinifi =
+                            "zaman-asimi";
+
+                        durumMetni =
+                            "● Zaman Aşımı";
+
+                    } else {
+
+                        durumSinifi =
+                            "ulasilamiyor";
+
+                        durumMetni =
+                            "● Ulaşılamıyor";
+                    }
+
+
+                } else if (veri.sure > 1500) {
+
+                    durumSinifi =
+                        "yavas";
+
+                    durumMetni =
+                        "● Yavaş";
+
+
+                } else {
+
+                    durumSinifi =
+                        "basarili";
+
+                    durumMetni =
+                        "● Çalışıyor";
+                }
+
+
+                html += `
+
+                    <div class="site-karti">
+
+                        <h3>
+                            ${veri.ad.toLocaleUpperCase("tr-TR")}
+                        </h3>
+
+
+                        <div class="kart-icerik">
+
+
+                            <div class="durum ${durumSinifi}">
+                                ${durumMetni}
+                            </div>
+
+
+                            <div class="sure">
+
+                                ${
+                                    veri.sure !== null
+                                    ? veri.sure + " ms"
+                                    : "-"
+                                }
+
+                            </div>
+
+
+                            <div class="http-durum">
+
+                                HTTP:
+                                ${veri.durum}
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            });
+
+
+            html += "</div>";
+
+
+            sonuc.innerHTML =
+                html;
+
+
+            buton.disabled = false;
+
+            buton.innerText =
+                "Kontrol Et";
+
+
+            gecmisiGetir();
+
+            return;
+        }
+
+
+        /* SONUÇ GELDİ */
+
+        veriler.push(veri);
+
+
+        const sayi =
+            document.getElementById(
+                "ilerleme-sayi"
+            );
+
+
+        const doluluk =
+            document.getElementById(
+                "ilerleme-doluluk"
+            );
+
+
+        const site =
+            document.getElementById(
+                "ilerleme-site"
+            );
+
+
+        if (sayi) {
+
+            sayi.innerText =
+                veri.tamamlanan +
+                " / " +
+                veri.toplam;
+        }
+
+
+        if (doluluk) {
+
+            doluluk.style.width =
+                (
+                    veri.tamamlanan /
+                    veri.toplam *
+                    100
+                ) + "%";
+        }
+
+
+        if (site) {
+
+            site.innerText =
+                "✓ " +
+                veri.ad +
+                " kontrol edildi";
+        }
+
+    };
+
+
+    /* HATA */
+
+    olay.onerror = function() {
+
+        olay.close();
+
+        buton.disabled = false;
+
+        buton.innerText =
+            "Kontrol Et";
+
+
+        sonuc.innerHTML = `
+
+            <div class="ilerleme">
+
+                🔴 Backend'e bağlanılamadı!
+
+            </div>
+
+        `;
+
+    };
+
+}
+
+
+/* GEÇMİŞ ÖLÇÜMLER */
+
+async function gecmisiGetir() {
+
+    try {
+
+        const cevap =
+            await fetch("/gecmis");
+
+        const veriler =
+            await cevap.json();
+
+
+        const gecmis =
+            document.getElementById("gecmis");
+
+
+        let html =
+            "<h2>Site Geçmişleri</h2>";
+
+
+        veriler.forEach((site) => {
+
+
+            html += `
+
+                <div class="gecmis-site">
+
+                    <h3>
+                        ${site.ad.toLocaleUpperCase("tr-TR")}
+                    </h3>
+
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Süre
+                                </th>
+
+                                <th>
+                                    Durum
+                                </th>
+
+                                <th>
+                                    Tarih
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+            `;
+
+
+            site.olcumler.forEach((kayit) => {
+
+
+                const basarili =
+                    kayit.durum >= 200 &&
+                    kayit.durum < 400;
+
+
+                html += `
+
+                    <tr>
+
+                        <td>
+
+                            ${
+                                kayit.sure !== null
+                                ? kayit.sure + " ms"
+                                : "-"
+                            }
+
+                        </td>
+
+
+                        <td class="${
+                            basarili
+                            ? "basarili"
+                            : "basarisiz"
+                        }">
+
+                            ${
+                                basarili
+                                ? "● Çalışıyor"
+                                : "● Ulaşılamıyor"
+                            }
+
+                        </td>
+
+
+                        <td>
+                            ${kayit.tarih}
+                        </td>
+
+                    </tr>
+
+                `;
+
+            });
+
+
+            html += `
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            `;
+
+        });
+
+
+        gecmis.innerHTML =
+            html;
+
+
+    } catch (hata) {
+
+        console.log(hata);
+
+    }
+
+}
+
+
+/* SAYFA AÇILINCA GEÇMİŞ */
+
+gecmisiGetir();
+
+</script>
+
+</body>
+
+</html>
