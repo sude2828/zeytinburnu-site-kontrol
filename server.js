@@ -192,11 +192,15 @@ async function siteKontrolEt(site) {
             hata: null
         };
 
-    } catch (hata) {
+   } catch (hata) {
 
-        clearTimeout(zamanAsimi);
+    clearTimeout(zamanAsimi);
 
-        let hataMesaji = "Bilinmeyen hata";
+    console.log("DETAYLI HATA:", hata);
+    console.log("HATA NEDENİ:", hata.cause);
+
+    let hataMesaji = "Bilinmeyen hata";
+        
 
         if (hata.name === "AbortError") {
 
