@@ -1,10 +1,11 @@
 const Database = require("better-sqlite3");
 const express = require("express");
 
-const db = new Database("site-kontrol.db");
 const app = express();
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
+
+const db = new Database("site-kontrol.db");
 
 const siteler = [
     {
@@ -89,6 +90,11 @@ const siteler = [
     }
 ];
 
+
+// --------------------------------------------------
+// VERİTABANI
+// --------------------------------------------------
+
 db.prepare(`
     CREATE TABLE IF NOT EXISTS olcumler (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,11 +105,26 @@ db.prepare(`
     )
 `).run();
 
+
+// --------------------------------------------------
+// STATİK DOSYALAR
+// --------------------------------------------------
+
 app.use(express.static(__dirname));
+
+
+// --------------------------------------------------
+// SİTELERİ GETİR
+// --------------------------------------------------
 
 app.get("/siteler", (req, res) => {
     res.json(siteler);
 });
+
+
+// --------------------------------------------------
+// ÖLÇÜM GEÇMİŞİ
+// --------------------------------------------------
 
 app.get("/gecmis", (req, res) => {
 
@@ -128,6 +149,11 @@ app.get("/gecmis", (req, res) => {
 
     res.json(sonuclar);
 });
+
+
+// --------------------------------------------------
+// TEK SİTE KONTROLÜ
+// --------------------------------------------------
 
 async function siteKontrolEt(site) {
 
@@ -174,18 +200,15 @@ async function siteKontrolEt(site) {
 
         if (hata.name === "AbortError") {
 
-            hataMesaji =
-                "20 saniye içinde cevap vermedi";
+            hataMesaji = "20 saniye içinde cevap vermedi";
 
         } else if (hata.code === "ENOTFOUND") {
 
-            hataMesaji =
-                "Site adresi bulunamadı";
+            hataMesaji = "Site adresi bulunamadı";
 
         } else if (hata.code === "ECONNREFUSED") {
 
-            hataMesaji =
-                "Bağlantı reddedildi";
+            hataMesaji = "Bağlantı reddedildi";
 
         } else if (hata.code === "ECONNRESET") {
 
@@ -199,15 +222,11 @@ async function siteKontrolEt(site) {
 
         } else if (hata.message) {
 
-            hataMesaji =
-                hata.message;
+            hataMesaji = hata.message;
         }
 
         console.log(
-            "❌ " +
-            site.ad +
-            " → " +
-            hataMesaji
+            "❌ " + site.ad + " → " + hataMesaji
         );
 
         db.prepare(`
@@ -229,6 +248,11 @@ async function siteKontrolEt(site) {
     }
 }
 
+
+// --------------------------------------------------
+// TÜM SİTELERİ KONTROL ET
+// --------------------------------------------------
+
 app.get("/tum-siteler", async (req, res) => {
 
     try {
@@ -241,13 +265,21 @@ app.get("/tum-siteler", async (req, res) => {
 
     } catch (hata) {
 
-        console.log("Genel kontrol hatası:", hata);
+        console.log(
+            "Genel kontrol hatası:",
+            hata
+        );
 
         res.status(500).json({
             hata: "Siteler kontrol edilirken hata oluştu."
         });
     }
 });
+
+
+// --------------------------------------------------
+// CANLI KONTROL
+// --------------------------------------------------
 
 app.get("/tum-siteler-canli", async (req, res) => {
 
@@ -266,16 +298,13 @@ app.get("/tum-siteler-canli", async (req, res) => {
         "keep-alive"
     );
 
-
     if (res.flushHeaders) {
         res.flushHeaders();
     }
 
-
     const toplam = siteler.length;
 
     let tamamlanan = 0;
-
 
     const kontroller = siteler.map(async (site) => {
 
@@ -283,7 +312,6 @@ app.get("/tum-siteler-canli", async (req, res) => {
             await siteKontrolEt(site);
 
         tamamlanan++;
-
 
         res.write(
             `data: ${JSON.stringify({
@@ -296,12 +324,9 @@ app.get("/tum-siteler-canli", async (req, res) => {
                 toplam: toplam
             })}\n\n`
         );
-
     });
 
-
     await Promise.all(kontroller);
-
 
     res.write(
         `data: ${JSON.stringify({
@@ -310,25 +335,47 @@ app.get("/tum-siteler-canli", async (req, res) => {
         })}\n\n`
     );
 
-
     res.end();
 });
 
+
+// --------------------------------------------------
+// TEK KONTROL
+// --------------------------------------------------
+
 app.get("/kontrol", async (req, res) => {
 
-    const site = siteler[0];
+    try {
 
-    const sonuc =
-        await siteKontrolEt(site);
+        const site = siteler[0];
 
+        const sonuc =
+            await siteKontrolEt(site);
 
-    res.json({
-        site: sonuc.url,
-        durum: sonuc.durum,
-        sure: sonuc.sure,
-        hata: sonuc.hata
-    });
+        res.json({
+            site: sonuc.url,
+            durum: sonuc.durum,
+            sure: sonuc.sure,
+            hata: sonuc.hata
+        });
+
+    } catch (hata) {
+
+        console.log(
+            "Kontrol hatası:",
+            hata
+        );
+
+        res.status(500).json({
+            hata: "Kontrol sırasında hata oluştu."
+        });
+    }
 });
+
+
+// --------------------------------------------------
+// ANA SAYFA
+// --------------------------------------------------
 
 app.get("/", (req, res) => {
 
@@ -338,22 +385,12 @@ app.get("/", (req, res) => {
 
 });
 
-app.listen(
-    PORT,
-    "127.0.0.1",
-    () => {
 
-        console.log(
-            "SUNUCU 3001 AÇIK"
-        );
-
-    }
-);
-
-app.listen(PORT, "127.0.0.1", () => {
-    console.log(`SUNUCU ${PORT} AÇIK`);
-}); const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`SUNUCU ${PORT} AÇIK`);
+
+    console.log(
+        `SUNUCU ${PORT} AÇIK`
+    );
+
 });
