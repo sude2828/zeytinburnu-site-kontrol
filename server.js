@@ -1,11 +1,18 @@
 const Database = require("better-sqlite3");
 const express = require("express");
+const https = require("https");
+const http = require("http");
 
 const app = express();
 
 const PORT = process.env.PORT || 3001;
 
 const db = new Database("site-kontrol.db");
+
+
+// ==================================================
+// SİTELER
+// ==================================================
 
 const siteler = [
     {
@@ -91,9 +98,9 @@ const siteler = [
 ];
 
 
-// --------------------------------------------------
+// ==================================================
 // VERİTABANI
-// --------------------------------------------------
+// ==================================================
 
 db.prepare(`
     CREATE TABLE IF NOT EXISTS olcumler (
@@ -106,25 +113,25 @@ db.prepare(`
 `).run();
 
 
-// --------------------------------------------------
+// ==================================================
 // STATİK DOSYALAR
-// --------------------------------------------------
+// ==================================================
 
 app.use(express.static(__dirname));
 
 
-// --------------------------------------------------
-// SİTELERİ GETİR
-// --------------------------------------------------
+// ==================================================
+// SİTELER
+// ==================================================
 
 app.get("/siteler", (req, res) => {
     res.json(siteler);
 });
 
 
-// --------------------------------------------------
-// ÖLÇÜM GEÇMİŞİ
-// --------------------------------------------------
+// ==================================================
+// GEÇMİŞ ÖLÇÜMLER
+// ==================================================
 
 app.get("/gecmis", (req, res) => {
 
@@ -151,68 +158,171 @@ app.get("/gecmis", (req, res) => {
 });
 
 
-// --------------------------------------------------
+// ==================================================
+// HTTPS / HTTP KONTROLÜ
+// ==================================================
+
+function siteIste(siteUrl, redirectSayisi = 0) {
+
+    return new Promise((resolve, reject) => {
+
+        if (redirectSayisi > 5) {
+            reject(new Error("Çok fazla yönlendirme"));
+            return;
+        }
+
+        let url;
+
+        try {
+            url = new URL(siteUrl);
+        } catch (hata) {
+            reject(new Error("Geçersiz site adresi"));
+            return;
+        }
+
+        const protokol =
+            url.protocol === "https:"
+                ? https
+                : http;
+
+        const baslangic = Date.now();
+
+        const istek = protokol.request(
+            url,
+            {
+                method: "GET",
+
+                timeout: 20000,
+
+                headers: {
+                    "User-Agent":
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+
+                    "Accept":
+                        "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+
+                    "Connection":
+                        "close"
+                }
+            },
+
+            cevap => {
+
+                const sure =
+                    Date.now() - baslangic;
+
+                // Yönlendirme varsa takip et
+                if (
+                    cevap.statusCode >= 300 &&
+                    cevap.statusCode < 400 &&
+                    cevap.headers.location
+                ) {
+
+                    const yeniAdres =
+                        new URL(
+                            cevap.headers.location,
+                            url
+                        ).toString();
+
+                    cevap.resume();
+
+                    siteIste(
+                        yeniAdres,
+                        redirectSayisi + 1
+                    )
+                    .then(resolve)
+                    .catch(reject);
+
+                    return;
+                }
+
+                // Cevabın tamamını tüket
+                cevap.resume();
+
+                resolve({
+                    durum: cevap.statusCode,
+                    sure: sure
+                });
+            }
+        );
+
+        istek.on("timeout", () => {
+
+            istek.destroy(
+                new Error(
+                    "20 saniye içinde cevap alınamadı"
+                )
+            );
+        });
+
+        istek.on("error", hata => {
+
+            reject(hata);
+        });
+
+        istek.end();
+    });
+}
+
+
+// ==================================================
 // TEK SİTE KONTROLÜ
-// --------------------------------------------------
+// ==================================================
 
 async function siteKontrolEt(site) {
 
-    const baslangic = Date.now();
-
-    const kontrolAbort = new AbortController();
-
-    const zamanAsimi = setTimeout(() => {
-        kontrolAbort.abort();
-    }, 20000);
-
     try {
 
-        const cevap = await fetch(site.url, {
-            signal: kontrolAbort.signal
-        });
-
-        clearTimeout(zamanAsimi);
-
-        const sure = Date.now() - baslangic;
+        const sonuc =
+            await siteIste(site.url);
 
         db.prepare(`
-            INSERT INTO olcumler (site, sure, durum)
+            INSERT INTO olcumler
+            (site, sure, durum)
             VALUES (?, ?, ?)
         `).run(
             site.url,
-            sure,
-            cevap.status
+            sonuc.sure,
+            sonuc.durum
+        );
+
+        console.log(
+            "✅ " +
+            site.ad +
+            " → HTTP " +
+            sonuc.durum +
+            " → " +
+            sonuc.sure +
+            " ms"
         );
 
         return {
+
             ad: site.ad,
+
             url: site.url,
-            durum: cevap.status,
-            sure: sure,
+
+            durum: sonuc.durum,
+
+            sure: sonuc.sure,
+
             hata: null
         };
 
-   } catch (hata) {
+    } catch (hata) {
 
-    clearTimeout(zamanAsimi);
+        let hataMesaji =
+            "Siteye ulaşılamadı";
 
-    console.log("DETAYLI HATA:", hata);
-    console.log("HATA NEDENİ:", hata.cause);
+        if (hata.code === "ENOTFOUND") {
 
-    let hataMesaji = "Bilinmeyen hata";
-        
-
-        if (hata.name === "AbortError") {
-
-            hataMesaji = "20 saniye içinde cevap vermedi";
-
-        } else if (hata.code === "ENOTFOUND") {
-
-            hataMesaji = "Site adresi bulunamadı";
+            hataMesaji =
+                "Site adresi bulunamadı";
 
         } else if (hata.code === "ECONNREFUSED") {
 
-            hataMesaji = "Bağlantı reddedildi";
+            hataMesaji =
+                "Bağlantı reddedildi";
 
         } else if (hata.code === "ECONNRESET") {
 
@@ -224,17 +334,30 @@ async function siteKontrolEt(site) {
             hataMesaji =
                 "Bağlantı zaman aşımına uğradı";
 
+        } else if (
+            hata.message &&
+            hata.message.includes("20 saniye")
+        ) {
+
+            hataMesaji =
+                "20 saniye içinde cevap vermedi";
+
         } else if (hata.message) {
 
-            hataMesaji = hata.message;
+            hataMesaji =
+                hata.message;
         }
 
         console.log(
-            "❌ " + site.ad + " → " + hataMesaji
+            "❌ " +
+            site.ad +
+            " → " +
+            hataMesaji
         );
 
         db.prepare(`
-            INSERT INTO olcumler (site, sure, durum)
+            INSERT INTO olcumler
+            (site, sure, durum)
             VALUES (?, ?, ?)
         `).run(
             site.url,
@@ -243,27 +366,35 @@ async function siteKontrolEt(site) {
         );
 
         return {
+
             ad: site.ad,
+
             url: site.url,
+
             durum: "Ulaşılamadı",
+
             sure: null,
+
             hata: hataMesaji
         };
     }
 }
 
 
-// --------------------------------------------------
-// TÜM SİTELERİ KONTROL ET
-// --------------------------------------------------
+// ==================================================
+// TÜM SİTELER
+// ==================================================
 
 app.get("/tum-siteler", async (req, res) => {
 
     try {
 
-        const sonuclar = await Promise.all(
-            siteler.map(site => siteKontrolEt(site))
-        );
+        const sonuclar =
+            await Promise.all(
+                siteler.map(site =>
+                    siteKontrolEt(site)
+                )
+            );
 
         res.json(sonuclar);
 
@@ -275,92 +406,120 @@ app.get("/tum-siteler", async (req, res) => {
         );
 
         res.status(500).json({
-            hata: "Siteler kontrol edilirken hata oluştu."
+            hata:
+                "Siteler kontrol edilirken hata oluştu."
         });
     }
 });
 
 
-// --------------------------------------------------
+// ==================================================
 // CANLI KONTROL
-// --------------------------------------------------
+// ==================================================
 
-app.get("/tum-siteler-canli", async (req, res) => {
+app.get(
+    "/tum-siteler-canli",
+    async (req, res) => {
 
-    res.setHeader(
-        "Content-Type",
-        "text/event-stream"
-    );
+        res.setHeader(
+            "Content-Type",
+            "text/event-stream"
+        );
 
-    res.setHeader(
-        "Cache-Control",
-        "no-cache"
-    );
+        res.setHeader(
+            "Cache-Control",
+            "no-cache"
+        );
 
-    res.setHeader(
-        "Connection",
-        "keep-alive"
-    );
+        res.setHeader(
+            "Connection",
+            "keep-alive"
+        );
 
-    if (res.flushHeaders) {
-        res.flushHeaders();
-    }
+        if (res.flushHeaders) {
+            res.flushHeaders();
+        }
 
-    const toplam = siteler.length;
+        const toplam =
+            siteler.length;
 
-    let tamamlanan = 0;
+        let tamamlanan = 0;
 
-    const kontroller = siteler.map(async (site) => {
+        const kontroller =
+            siteler.map(async site => {
 
-        const sonuc =
-            await siteKontrolEt(site);
+                const sonuc =
+                    await siteKontrolEt(site);
 
-        tamamlanan++;
+                tamamlanan++;
+
+                res.write(
+                    `data: ${JSON.stringify({
+
+                        ad: sonuc.ad,
+
+                        url: sonuc.url,
+
+                        durum: sonuc.durum,
+
+                        sure: sonuc.sure,
+
+                        hata: sonuc.hata,
+
+                        tamamlanan:
+                            tamamlanan,
+
+                        toplam:
+                            toplam
+
+                    })}\n\n`
+                );
+            });
+
+        await Promise.all(kontroller);
 
         res.write(
             `data: ${JSON.stringify({
-                ad: sonuc.ad,
-                url: sonuc.url,
-                durum: sonuc.durum,
-                sure: sonuc.sure,
-                hata: sonuc.hata,
-                tamamlanan: tamamlanan,
+
+                tamamlandi: true,
+
                 toplam: toplam
+
             })}\n\n`
         );
-    });
 
-    await Promise.all(kontroller);
-
-    res.write(
-        `data: ${JSON.stringify({
-            tamamlandi: true,
-            toplam: toplam
-        })}\n\n`
-    );
-
-    res.end();
-});
+        res.end();
+    }
+);
 
 
-// --------------------------------------------------
+// ==================================================
 // TEK KONTROL
-// --------------------------------------------------
+// ==================================================
 
 app.get("/kontrol", async (req, res) => {
 
     try {
 
-        const site = siteler[0];
+        const site =
+            siteler[0];
 
         const sonuc =
             await siteKontrolEt(site);
 
         res.json({
-            site: sonuc.url,
-            durum: sonuc.durum,
-            sure: sonuc.sure,
-            hata: sonuc.hata
+
+            site:
+                sonuc.url,
+
+            durum:
+                sonuc.durum,
+
+            sure:
+                sonuc.sure,
+
+            hata:
+                sonuc.hata
         });
 
     } catch (hata) {
@@ -371,30 +530,41 @@ app.get("/kontrol", async (req, res) => {
         );
 
         res.status(500).json({
-            hata: "Kontrol sırasında hata oluştu."
+
+            hata:
+                "Kontrol sırasında hata oluştu."
         });
     }
 });
 
 
-// --------------------------------------------------
+// ==================================================
 // ANA SAYFA
-// --------------------------------------------------
+// ==================================================
 
 app.get("/", (req, res) => {
 
     res.sendFile(
         __dirname + "/index.html"
     );
-
 });
 
 
+// ==================================================
+// SUNUCU
+// ==================================================
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
 
-    console.log(
-        `SUNUCU ${PORT} AÇIK`
-    );
+        console.log(
+            `SUNUCU ${PORT} AÇIK`
+        );
 
-});
+        console.log(
+            `Web sitesi hazır`
+        );
+    }
+);
